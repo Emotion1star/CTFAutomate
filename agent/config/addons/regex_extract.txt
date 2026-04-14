@@ -1,0 +1,8 @@
+<value>
+    {"text":"待分析文本","pattern":"正则表达式","group":0,"flags":"IGNORECASE|DOTALL","unique":true}
+</value>
+
+示例：
+<value>
+    {"text":"flag{demo} token=abc123","pattern":"flag\\{.*?\\}|token=([a-z0-9]+)","group":0,"flags":"IGNORECASE","unique":true}
+</value>

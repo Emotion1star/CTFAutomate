@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CTF Solver Challenge Operations</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <canvas id="particle-canvas" class="particle-canvas" aria-hidden="true"></canvas>
+  <div class="noise-overlay" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand glitch" data-text="Challenge Ops">
+        <div class="brand-mark">CS</div>
+        <div>
+          <p class="eyebrow">CTF CHALLENGE OPERATIONS</p>
+          <h1>Challenge Ops</h1>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-link is-active" data-view="overview">总览</button>
+        <button class="nav-link" data-view="tasks">任务</button>
+        <button class="nav-link" data-view="agents">Agent</button>
+      </nav>
+
+      <div class="sidebar-card">
+        <p class="sidebar-label">当前选择</p>
+        <div id="selected-task-empty">未选中任务</div>
+        <div id="selected-task-meta" class="hidden"></div>
+      </div>
+
+      <section class="sidebar-card config-panel">
+        <div class="panel-header">
+          <h3>LLM 配置</h3>
+          <span class="panel-tip">远程下发</span>
+        </div>
+        <div id="llm-current" class="muted">尚未加载</div>
+        <div id="llm-status" class="form-status hidden" role="status"></div>
+
+        <div class="config-grid">
+          <label class="config-field span-2">
+            <span>Agent Alias</span>
+            <input id="agent-name-input" type="text" placeholder="留空则手动启动时自行命名">
+          </label>
+          <label class="config-field">
+            <span>Provider</span>
+            <select id="llm-provider-select" required>
+              <option value="deepseek">deepseek</option>
+              <option value="random">random</option>
+              <option value="deepseek">deepseek</option>
+              <option value="tencent">tencent</option>
+              <option value="silcon">silcon</option>
+              <option value="zhipu">zhipu</option>
+            </select>
+          </label>
+          <label class="config-field">
+            <span>Protocol</span>
+            <select id="llm-protocol-select" required>
+              <option value="openai">openai</option>
+              <option value="anthropic">anthropic</option>
+            </select>
+          </label>
+          <label class="config-field span-2">
+            <span>Model</span>
+            <input id="llm-model-input" type="text" placeholder="例如 deepseek-chat / glm-4.7" required>
+          </label>
+          <label class="config-field span-2">
+            <span>API URL</span>
+            <input id="llm-url-input" type="url" placeholder="留空则使用 provider 默认地址">
+          </label>
+          <label class="config-field span-2">
+            <span>API Key</span>
+            <input id="llm-key-input" type="password" placeholder="sk-..." required>
+          </label>
+        </div>
+
+        <button id="save-llm-settings" class="primary-button neon-button">保存模型设置</button>
+        <button id="launch-agent-button" class="ghost-button">保存并启动 Agent</button>
+      </section>
+
+      <button id="open-create-modal" class="primary-button neon-button">新建任务</button>
+    </aside>
+
+    <main class="main-panel">
+      <div class="main-stage">
+        <header class="hero">
+          <div>
+            <p class="eyebrow">TACTICAL CTF ORCHESTRATION</p>
+            <h2 class="glow-title">Multi-Agent CTF Challenge Console</h2>
+            <p class="hero-copy">A high-visibility operations surface for target intake, page intelligence, exploit telemetry, solution traces, and live agent coordination.</p>
+          </div>
+          <div class="hero-actions">
+            <button id="refresh-all" class="ghost-button">立即刷新</button>
+            <div class="pulse-indicator">
+              <span class="pulse-dot"></span>
+              <span id="last-refresh-text">等待首轮同步</span>
+            </div>
+          </div>
+        </header>
+
+        <section id="overview-view" class="view is-visible">
+          <div id="stats-grid" class="stats-grid"></div>
+          <section class="panel">
+            <div class="panel-header">
+              <h3>编排拓扑</h3>
+              <span class="panel-tip">Agent → Task → Vuln/Flag</span>
+            </div>
+            <div id="fleet-topology" class="topology-shell"></div>
+          </section>
+          <div class="grid-two">
+            <section class="panel scroll-panel">
+              <div class="panel-header">
+                <h3>Recent Challenges</h3>
+                <span class="panel-tip">Live queue</span>
+              </div>
+              <div id="latest-tasks" class="stack-list"></div>
+            </section>
+            <section class="panel scroll-panel">
+              <div class="panel-header">
+                <h3>Live Message Stream</h3>
+                <span class="panel-tip">Execution bus</span>
+              </div>
+              <div id="latest-messages" class="timeline compact"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tasks-view" class="view">
+          <div class="panel scroll-panel">
+            <div class="panel-header">
+              <h3>任务控制台</h3>
+              <span class="panel-tip">点击任务可查看详情</span>
+            </div>
+            <div id="tasks-table" class="table-shell"></div>
+          </div>
+
+          <div id="task-detail-panel" class="task-detail hidden">
+            <div class="grid-two">
+              <section class="panel">
+                <div class="panel-header">
+                  <h3>任务概览</h3>
+                  <span class="panel-tip">目标 / 状态 / 结果</span>
+                </div>
+                <div id="task-summary" class="detail-summary"></div>
+              </section>
+              <section class="panel scroll-panel">
+                <div class="panel-header">
+                  <h3>Runtime Output</h3>
+                  <span class="panel-tip">raw execution stream</span>
+                </div>
+                <div id="task-runtime-output" class="runtime-output"></div>
+              </section>
+            </div>
+
+            <div class="grid-two">
+              <section class="panel scroll-panel">
+                <div class="panel-header">
+                  <h3>消息时间线</h3>
+                  <span class="panel-tip">任务 session</span>
+                </div>
+                <div id="task-messages" class="timeline"></div>
+              </section>
+              <section class="panel scroll-panel">
+                <div class="panel-header">
+                  <h3>漏洞清单</h3>
+                  <span class="panel-tip">实时同步</span>
+                </div>
+                <div id="task-vulns" class="stack-list"></div>
+              </section>
+            </div>
+
+            <div class="grid-two">
+              <section class="panel scroll-panel">
+                <div class="panel-header">
+                  <h3>页面资产</h3>
+                  <span class="panel-tip">探索结果</span>
+                </div>
+                <div id="task-pages" class="stack-list"></div>
+              </section>
+              <section class="panel scroll-panel">
+              <div class="panel-header">
+                  <h3>漏洞利用链</h3>
+                  <span class="panel-tip">从发现到利用</span>
+              </div>
+              <div id="task-exploit-chain" class="chain-list"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section id="agents-view" class="view">
+          <div class="panel scroll-panel">
+            <div class="panel-header">
+              <h3>Agent Fleet</h3>
+              <span class="panel-tip">心跳与能力快照</span>
+            </div>
+            <div id="agent-grid" class="agent-grid"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="create-task-modal" class="modal">
+    <form id="create-task-form" class="modal-form">
+      <div class="panel-header">
+        <h3>创建 CTF 任务</h3>
+        <button type="button" id="close-create-modal" class="text-button">关闭</button>
+      </div>
+
+      <div id="task-form-status" class="form-status hidden" role="status"></div>
+
+      <label>
+        <span>目标 URL</span>
+        <input type="url" name="target" placeholder="http://target:port" required>
+      </label>
+      <label>
+        <span>题目描述</span>
+        <textarea name="description" rows="4" placeholder="题目提示、账号口令、已知接口、特殊请求头" required></textarea>
+      </label>
+      <label>
+        <span>分配 Agent</span>
+        <select name="agent_id" id="agent-select">
+          <option value="">自动分配给可用 Agent</option>
+        </select>
+      </label>
+
+      <div class="modal-context">
+        <div class="sidebar-label">当前任务将使用的模型快照</div>
+        <div id="create-task-llm" class="code-inline">尚未加载</div>
+      </div>
+
+      <button type="submit" class="primary-button neon-button">提交任务</button>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>

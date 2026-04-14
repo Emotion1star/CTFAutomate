@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.DS_Store
+runtime/*.log
+runtime/services.json
+runtime/services.pid
+instance/*.db
+server/backend/instance/*.db
+agent/config/chat.db
+agent/config/key.txt
+agent/tasks/

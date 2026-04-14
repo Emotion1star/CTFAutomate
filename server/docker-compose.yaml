@@ -1,0 +1,38 @@
+# 删掉了废弃的 version 字段
+services:
+  # Redis 消息队列（项目必需）
+  redis:
+    image: redis:alpine
+    container_name: ctf-redis
+    restart: always
+    networks:
+      - ctf-network
+
+  # Flask 后端（指定本地构建路径：./backend）
+  backend:
+    build: ./backend
+    image: ctfui-backend:latest
+    container_name: ctf-backend
+    restart: always
+    depends_on:
+      - redis
+    ports:
+      - "5000:5000"
+    networks:
+      - ctf-network
+
+  # 前端界面（指定本地构建路径：./frontend）
+  frontend:
+    build: ./frontend
+    image: ctfui-frontend:latest
+    container_name: ctf-frontend
+    restart: always
+    ports:
+      - "85:80"
+    networks:
+      - ctf-network
+
+# 自定义网络，让容器互相通信
+networks:
+  ctf-network:
+    driver: bridge
